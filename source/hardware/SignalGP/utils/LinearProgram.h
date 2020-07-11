@@ -65,13 +65,14 @@ namespace sgp {
       const arg_t & GetArg(size_t i) const { return args[i]; }
       const tag_t & GetTag(size_t i) const { return tags[i]; }
 
-      // Print each of the instruction's tag followed by the instruction and its arguments
+      // Print each of the instruction's tag followed by the instruction and its argumens
       template<typename HARDWARE_T, typename INST_PROPERTY_T>
-      void Print(std::ostream& out, const InstructionLibrary<HARDWARE_T, inst_t, INST_PROPERTY_T>& ilib) const{
-        out << "\t";
+      void Print(std::ostream& out, InstructionLibrary<HARDWARE_T, inst_t, INST_PROPERTY_T>& ilib, size_t column = 1) {
+        constexpr size_t space_size = 2;
+        out << "  ";
         // Skip last tag & arg so we dont get an extra delimiter.
-        std::copy(tags.begin(), tags.end() - 1, std::ostream_iterator<tag_t>(out, "\n\t"));
-        out << tags.back() << " " << ilib.GetName(id) << " [";
+        std::copy(tags.begin(), tags.end() - 1, std::ostream_iterator<tag_t>(out, "\n  "));
+        out << tags.back() << std::string(space_size * column, ' ') << ilib.GetName(id) << " [";
         std::copy(args.begin(), args.end() - 1, std::ostream_iterator<arg_t>(out, ", "));
         out << args.back() << "]\n";
       }
@@ -142,11 +143,14 @@ namespace sgp {
       return inst.id < ilib.GetSize();
     }
     
-    // Print each instruction out
+    // Print each instruction out to the specified column 
     template<typename HARDWARE_T, typename INST_PROPERTY_T>
-    void Print(std::ostream& out, const InstructionLibrary<HARDWARE_T, inst_t, INST_PROPERTY_T>& ilib) const{
-      for(auto const& inst : inst_seq){
-        inst.Print(out, ilib);
+    void Print(std::ostream& out, InstructionLibrary<HARDWARE_T, inst_t, INST_PROPERTY_T>& ilib) {
+      size_t column = 1;
+      for(auto& inst : inst_seq){
+        if (ilib.HasProperty(inst.GetID(), HARDWARE_T::InstProperty::BLOCK_CLOSE) && column > 1) { --column; }
+        inst.Print(out, ilib, column);
+        if (ilib.HasProperty(inst.GetID(), HARDWARE_T::InstProperty::BLOCK_DEF)) { ++column; }
       }
     }
   };
